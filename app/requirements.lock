@@ -1,0 +1,23 @@
+# Fully pinned dependency set for the target runtime: Amazon Linux 2023
+# system Python (CPython 3.9, x86_64). Installed offline from the bundled
+# wheelhouse. Includes the Python<3.10-only deps (importlib-metadata, zipp,
+# urllib3<1.27) that pip would miss when building on a newer Python.
+# Regenerate when bumping requirements.txt.
+blinker==1.8.2
+boto3==1.35.36
+botocore==1.35.36
+click==8.1.7
+flask==3.0.3
+gunicorn==23.0.0
+importlib-metadata==8.5.0
+itsdangerous==2.2.0
+jinja2==3.1.6
+jmespath==1.0.1
+markupsafe==3.0.2
+packaging==24.2
+python-dateutil==2.9.0.post0
+s3transfer==0.10.4
+six==1.16.0
+urllib3==1.26.20
+werkzeug==3.0.6
+zipp==3.20.2

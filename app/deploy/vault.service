@@ -1,0 +1,32 @@
+[Unit]
+Description=Secure Vault internal web service (gunicorn)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=vault
+Group=vault
+WorkingDirectory=/opt/vault
+EnvironmentFile=/etc/vault.env
+ExecStart=/opt/vault/venv/bin/gunicorn --workers 2 --threads 4 --bind 127.0.0.1:8000 --access-logfile - --forwarded-allow-ips 127.0.0.1 wsgi:app
+Restart=always
+RestartSec=3
+
+# Hardening
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LockPersonality=true
+RestrictRealtime=true
+CapabilityBoundingSet=
+ReadWritePaths=/var/log/vault
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,12 @@
+# Accepted findings, each with a justification (reviewed, not ignored).
+skip-check:
+  - CKV_AWS_18   # S3 access logging: targets cannot use SSE-KMS; CloudTrail S3 data events audit object access instead
+  - CKV_AWS_144  # S3 cross-region replication: out of scope for a single-region project (cost)
+  - CKV2_AWS_62  # S3 event notifications: not needed; CloudTrail + EventBridge cover change detection
+  - CKV_AWS_338  # Log retention >= 1 year: 30 days by design to control cost (configurable)
+  - CKV_AWS_116  # Lambda DLQ: both functions are idempotent and re-run on schedule/next event
+  - CKV_AWS_115  # Lambda reserved concurrency: new accounts have a 10-concurrency limit; reserving would fail
+  - CKV_AWS_272  # Lambda code signing: requires AWS Signer profile, out of scope
+  - CKV_AWS_117  # sg-guard Lambda outside VPC: it only calls EC2/SNS control-plane APIs and needs no VPC access
+  - CKV_AWS_126  # EC2 detailed monitoring: CloudWatch agent supplies 60s metrics; detailed monitoring adds cost
+  - CKV2_AWS_10  # CloudTrail -> CloudWatch Logs: EventBridge rules consume CloudTrail events directly

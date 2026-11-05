@@ -1,0 +1,30 @@
+# Secrets and generated material - never commit
+pki/
+vpn-clients/
+*.ovpn
+*.pem
+*.key
+
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfplan
+tfplan
+terraform.tfvars
+crash.log
+backend.tf
+
+# Build output
+build/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Frontend
+fe/node_modules/
+fe/dist/

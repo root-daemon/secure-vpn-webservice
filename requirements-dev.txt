@@ -1,0 +1,4 @@
+-r app/requirements.txt
+pytest==8.3.3
+moto[s3,ec2]==5.0.18
+ruff==0.7.1

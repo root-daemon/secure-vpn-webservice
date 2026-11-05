@@ -1,0 +1,81 @@
+#!/bin/bash
+# Bootstrap for the internal web server. Runs once at first boot.
+# No internet access: packages come from the AL2023 repos in S3 via the
+# gateway endpoint, Python deps come from the offline wheelhouse in the bundle.
+set -euo pipefail
+exec > >(tee -a /var/log/user-data.log) 2>&1
+echo "[bootstrap] start $(date -Is)"
+
+retry() {
+  local n=0
+  until "$@"; do
+    n=$((n + 1))
+    if [ "$n" -ge 10 ]; then echo "[bootstrap] failed after $n attempts: $*"; return 1; fi
+    sleep $((n * 6))
+  done
+}
+
+export AWS_REGION="${region}"
+export AWS_DEFAULT_REGION="${region}"
+
+# 1. OS packages -------------------------------------------------------------
+retry dnf install -y nginx python3-pip unzip amazon-cloudwatch-agent
+dnf update -y --security || true
+
+# 2. Application bundle (SSE-KMS object, fetched through the S3 endpoint) ----
+install -d -m 0755 /opt/vault
+retry aws s3 cp "s3://${bucket}/${bundle_key}" /tmp/app-bundle.zip
+unzip -o -q /tmp/app-bundle.zip -d /opt/vault
+rm -f /tmp/app-bundle.zip
+
+id vault >/dev/null 2>&1 || useradd --system --home-dir /opt/vault --shell /sbin/nologin vault
+python3 -m venv /opt/vault/venv
+/opt/vault/venv/bin/pip install --no-index --find-links /opt/vault/wheels -r /opt/vault/requirements.lock
+install -d -o vault -g vault -m 0750 /var/log/vault
+chown -R root:vault /opt/vault && chmod -R g+rX,o-rwx /opt/vault
+
+# 3. TLS material from SSM Parameter Store (SecureString, KMS) ---------------
+install -d -m 0700 /etc/pki/vault
+retry aws ssm get-parameter --with-decryption --name "${tls_cert_param}" \
+  --query Parameter.Value --output text > /etc/pki/vault/fullchain.pem
+retry aws ssm get-parameter --with-decryption --name "${tls_key_param}" \
+  --query Parameter.Value --output text > /etc/pki/vault/privkey.pem
+chmod 0600 /etc/pki/vault/*.pem
+
+# 4. Application service --------------------------------------------------------
+umask 077
+cat > /etc/vault.env <<EOF
+VAULT_BUCKET=${bucket}
+VAULT_KMS_KEY_ARN=${kms_key_arn}
+VAULT_ENVIRONMENT=${environment}
+VAULT_PROJECT=${project}
+VAULT_FQDN=${app_fqdn}
+VAULT_ALLOWED_ORIGINS=${allowed_origins}
+VAULT_LOG_FILE=/var/log/vault/app.log
+VAULT_SECRET_KEY=$(openssl rand -hex 32)
+AWS_REGION=${region}
+AWS_DEFAULT_REGION=${region}
+EOF
+chmod 0640 /etc/vault.env && chgrp vault /etc/vault.env
+umask 022
+
+install -m 0644 /opt/vault/deploy/vault.service /etc/systemd/system/vault.service
+install -m 0644 /opt/vault/deploy/nginx.conf /etc/nginx/nginx.conf
+rm -rf /usr/share/nginx/vault && install -d -m 0755 /usr/share/nginx/vault
+cp -R /opt/vault/fe/. /usr/share/nginx/vault/
+chown -R root:root /usr/share/nginx/vault && chmod -R a+rX,go-w /usr/share/nginx/vault
+nginx -t
+
+systemctl daemon-reload
+systemctl enable --now vault.service
+systemctl enable --now nginx
+
+# 5. Monitoring agent (config from SSM) ------------------------------------
+retry /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl \
+  -a fetch-config -m ec2 -s -c "ssm:${cwagent_param}"
+
+# 6. Smoke test -------------------------------------------------------------
+retry curl -fsS --cacert /etc/pki/vault/fullchain.pem \
+  --resolve "${app_fqdn}:443:127.0.0.1" "https://${app_fqdn}/health"
+echo
+echo "[bootstrap] complete $(date -Is)"

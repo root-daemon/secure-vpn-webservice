@@ -1,0 +1,95 @@
+@import "tailwindcss";
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
+
+/* Semantic tokens. Utilities reference these variables, so dark mode only
+   swaps values below; components never need dark: variants.
+   Radius rule: panels rounded-lg (8px), controls and badges rounded-md (6px). */
+@theme {
+  --font-sans: "Geist Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Geist Mono Variable", ui-monospace, SFMono-Regular, monospace;
+
+  --color-bg: #f4f6f8;
+  --color-surface: #ffffff;
+  --color-sunken: #eef1f4;
+  --color-line: #dde3ea;
+  --color-ink: #1b2430;
+  --color-muted: #5b6878;
+  --color-accent: #c2410c;
+  --color-accent-hover: #9a3412;
+  --color-accent-soft: #fdeee6;
+  --color-on-accent: #ffffff;
+  --color-ok: #15803d;
+  --color-ok-soft: #e7f6ec;
+  --color-warn: #a16207;
+  --color-warn-soft: #fdf5dc;
+  --color-err: #b91c1c;
+  --color-err-soft: #fdecec;
+}
+
+@layer base {
+  :root[data-theme="dark"] {
+    --color-bg: #11161d;
+    --color-surface: #18202a;
+    --color-sunken: #131a22;
+    --color-line: #2a3542;
+    --color-ink: #e6ebf1;
+    --color-muted: #94a1b2;
+    --color-accent: #f0703a;
+    --color-accent-hover: #f58a5c;
+    --color-accent-soft: #3a2218;
+    --color-on-accent: #1b1109;
+    --color-ok: #4ade80;
+    --color-ok-soft: #15291d;
+    --color-warn: #facc15;
+    --color-warn-soft: #2d2711;
+    --color-err: #f87171;
+    --color-err-soft: #321b1d;
+  }
+
+  html {
+    color-scheme: light;
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    font-feature-settings: "ss01";
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .enter {
+    animation: enter 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+  }
+  .shimmer {
+    background: linear-gradient(90deg, var(--color-sunken) 0%, var(--color-line) 50%, var(--color-sunken) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s ease-in-out infinite;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shimmer {
+    background: var(--color-sunken);
+  }
+}
+
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+}
+@keyframes shimmer {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
