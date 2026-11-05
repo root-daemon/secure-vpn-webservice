@@ -1,0 +1,20 @@
+[1. Title]
+This is SecureVPN: an internal web service on AWS with encrypted storage and automated monitoring. It is a private document vault that you can reach only through AWS Client VPN, and the whole stack is defined in Terraform.
+
+[2. Security proof]
+First, the security proof. With the VPN disconnected, app dot securevpn dot internal does not resolve. The name exists only in a Route 53 private hosted zone, and the server has no public IP, no internet gateway and no NAT. The hosted copy of the interface on Vercel loads, but it reports that it cannot reach the vault service, because every API call has to travel through the VPN.
+Now I connect the AWS VPN Client. It authenticates with mutual TLS, using a client certificate from the project's private certificate authority, and it shows a banner saying that all connections are logged and monitored. Only the VPC range is routed through the tunnel. The same address now loads over HTTPS.
+
+[3. Walkthrough]
+The top strip shows the four hops every request takes: Client VPN, nginx with TLS, the vault API, and the S3 bucket, which accepts object access only through the VPC endpoint.
+I'll upload a file. It is stored in S3 with server-side encryption under the project's customer-managed KMS key. The details drawer reads the object's live S3 metadata: the encryption type, the KMS key ARN, the S3 Bucket Key, and the version ID. Downloads come back through the same tunnel. When I delete a file, versioning keeps the previous versions for thirty days.
+The security posture panel checks the live configuration: bucket encryption, the Bucket Key, all four public access blocks, versioning, TLS 1.3 on this connection, IMDSv2 on the instance, and no public IP address. There is also a dark mode.
+
+[4. Monitoring]
+Monitoring is automated. A CloudWatch dashboard tracks the server, the app, the VPN, and a synthetic check: a Lambda inside the VPC that tests the app every five minutes. Twelve alarms send alerts through an encrypted SNS topic. Running make demo-alert forces the CPU alarm into the ALARM state, and the alert email arrives in about a minute.
+
+[5. Vercel copy]
+The same interface is also hosted on Vercel as static files. It works only from a browser that is on the VPN and trusts the private CA. The API allows that one origin, and it still requires a CSRF token on every change.
+
+[6. Closing]
+To sum up: no internet exposure, VPN access with mutual TLS, KMS encryption at rest, TLS in transit, and automated monitoring and alerts. Thank you.
