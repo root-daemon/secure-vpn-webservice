@@ -69,6 +69,16 @@ python3 fe/dev/mock_api.py          # API on 127.0.0.1:8000 (needs requirements-
 cd fe && npm install && npm run dev # UI on http://localhost:5173, proxies /api to :8000
 ```
 
+## Hosted UI copy (optional)
+
+nginx on the instance serves the UI, so nothing else is needed. A copy can also be hosted elsewhere (for example on Vercel) and still talk to the private API:
+
+1. Build it with `VITE_API_BASE=https://app.securevpn.internal` (`fe/vercel.json` holds the Vercel settings).
+2. Add its origin to `cors_allowed_origins` in `terraform.tfvars`, then apply. The default `[]` keeps the API same-origin only.
+3. Open it from a browser that is on the VPN and trusts `pki/ca/ca.crt`. Allow local network access if the browser asks.
+
+The hosted page holds only static files. Every API call still travels over the VPN, and CSRF tokens are still required.
+
 ## Verify (evidence for the report)
 
 ```bash
